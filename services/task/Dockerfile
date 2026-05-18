@@ -9,6 +9,7 @@ WORKDIR /app
 COPY . .
 
 RUN pnpm install --frozen-lockfile
+RUN npm install -g tsx
 RUN pnpm --filter @lookme/database exec prisma generate
 
 ENV NODE_ENV=production
@@ -16,4 +17,4 @@ EXPOSE 5004
 
 USER node
 
-CMD ["node", "node_modules/.bin/tsx", "services/task/src/index.ts"]
+CMD ["tsx", "services/task/src/index.ts"]

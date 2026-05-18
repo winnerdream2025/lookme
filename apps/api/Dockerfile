@@ -11,6 +11,7 @@ COPY . .
 
 # Install all dependencies (devDeps included — tsx is in devDeps)
 RUN pnpm install --frozen-lockfile
+RUN npm install -g tsx
 
 # Generate Prisma client
 RUN pnpm --filter @lookme/database exec prisma generate
@@ -21,4 +22,4 @@ EXPOSE 4000
 # Run as non-root
 USER node
 
-CMD ["node", "node_modules/.bin/tsx", "apps/api/src/index.ts"]
+CMD ["tsx", "apps/api/src/index.ts"]
