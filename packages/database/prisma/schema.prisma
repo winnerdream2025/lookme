@@ -1,0 +1,648 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  WORKER
+  CLIENT
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT      // Guest order awaiting Stripe confirmation
+  PENDING
+  PROCESSING
+  IN_PROGRESS
+  COMPLETED
+  PARTIALLY_COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  WALLET               // Registered users with wallet balance
+  STRIPE               // Direct Stripe payment (guest or registered)
+}
+
+enum TaskStatus {
+  AVAILABLE
+  ASSIGNED
+  SUBMITTED
+  VERIFIED
+  REJECTED
+  EXPIRED
+  FLAGGED
+  PAID
+}
+
+enum ProofStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  FLAGGED
+}
+
+enum TransactionType {
+  DEPOSIT
+  ESCROW_LOCK
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  WITHDRAWAL
+  PLATFORM_FEE
+  REWARD
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum EscrowStatus {
+  HELD
+  PARTIALLY_RELEASED
+  RELEASED
+  REFUNDED
+}
+
+enum ReviewSentiment {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  ANY
+}
+
+enum DeviceType {
+  DESKTOP
+  MOBILE
+  TABLET
+}
+
+// ─────────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(WORKER)
+  isActive      Boolean  @default(true)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  termsAcceptedAt DateTime?                   // set when worker accepts T&C
+
+  profile       UserProfile?
+  sessions      Session[]
+  passwordResetTokens PasswordResetToken[]
+  orders        Order[]          // CLIENT: orders they placed
+  tasks         Task[]           // WORKER: tasks assigned to them
+  wallet        Wallet?
+  trustScore    TrustScore?
+  auditLogs     AuditLog[]
+  emailUsages   WorkerEmailUsage[]
+  viewHistory   WorkerViewHistory[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model UserProfile {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  firstName   String?
+  lastName    String?
+  avatar      String?
+  country     String?     @db.Char(2)
+  timezone    String?
+  language    String      @default("en")
+  deviceType  DeviceType?
+  bio         String?
+  gender      Gender?                     // workers declare their gender for review task matching
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────────
+// SERVICE CATALOG
+// ─────────────────────────────────────────────
+
+model Platform {
+  id          String        @id @default(cuid())
+  slug        String        @unique   // "instagram", "tiktok", "google-business"
+  name        String                  // "Instagram"
+  icon        String?                 // icon key or URL
+  color       String?                 // brand hex color
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  services    ServiceType[]
+
+  @@index([isActive, sortOrder])
+  @@map("platforms")
+}
+
+model ServiceCategory {
+  id          String        @id @default(cuid())
+  slug        String        @unique   // "followers", "likes", "views", "reviews", etc.
+  name        String                  // "Followers"
+  description String?
+  icon        String?
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  services    ServiceType[]
+
+  @@index([isActive, sortOrder])
+  @@map("service_categories")
+}
+
+model ServiceType {
+  id              String          @id @default(cuid())
+  platformId      String
+  categoryId      String
+  slug            String          @unique   // "instagram-followers", "google-positive-review"
+  name            String                    // "Instagram Followers"
+  description     String?
+  minQuantity     Int             @default(10)
+  maxQuantity     Int             @default(10000)
+  basePrice       Decimal         @db.Decimal(10, 4)  // price per unit charged to client
+  workerReward    Decimal         @db.Decimal(10, 4)  // reward per unit paid to worker
+  platformFeePercent Int          @default(30)        // platform take-rate: 30% default, 70% for high-volume, 40% for reviews
+  estimatedTime   Int             @default(30)        // seconds per unit for worker
+  deliveryEstimate String?                             // "1-2 hours", "24 hours"
+  isActive        Boolean         @default(true)
+  requiresProof   Boolean         @default(true)
+  requiresTimer   Boolean         @default(false)     // traffic/view tasks: must stay on page for duration
+  minViewDuration Int             @default(30)        // minimum seconds worker must view (for traffic tasks)
+  proofType       String?                              // "screenshot", "link", "username"
+  instructions    String?                              // default instructions for workers
+  metadata        Json?                                // platform-specific config
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  platform        Platform        @relation(fields: [platformId], references: [id])
+  category        ServiceCategory @relation(fields: [categoryId], references: [id])
+  pricingTiers    PricingTier[]
+  orders          Order[]
+
+  @@index([platformId])
+  @@index([categoryId])
+  @@index([isActive, sortOrder])
+  @@map("service_types")
+}
+
+model PricingTier {
+  id              String      @id @default(cuid())
+  serviceTypeId   String
+  slug            String      // "standard", "express", "premium"
+  name            String      // "Standard", "Express", "Premium"
+  multiplier      Decimal     @default(1.00) @db.Decimal(4, 2) // price multiplier
+  deliveryHours   Int         // estimated delivery time in hours
+  isActive        Boolean     @default(true)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  serviceType     ServiceType @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
+  orders          Order[]
+
+  @@unique([serviceTypeId, slug])
+  @@index([serviceTypeId])
+  @@map("pricing_tiers")
+}
+
+// ─────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────
+
+model Order {
+  id              String          @id @default(cuid())
+  
+  // Client can be NULL for guest orders
+  clientId        String?
+  
+  // Guest order fields
+  guestEmail      String?                            // Required if clientId is null
+  guestName       String?                            // Optional guest name
+  trackingToken   String?         @unique            // Unique token for guest order tracking
+  
+  // Service & pricing
+  serviceTypeId   String
+  pricingTierId   String?
+  
+  // Order details
+  status          OrderStatus     @default(PENDING)
+  quantity        Int                               // how many followers, likes, etc.
+  completedQty    Int             @default(0)       // how many completed so far
+  targetUrl       String                            // URL or account to target
+  targetUsername  String?                            // target handle if applicable
+  
+  // Pricing
+  unitPrice       Decimal         @db.Decimal(10, 4) // per-unit price at time of order
+  totalPrice      Decimal         @db.Decimal(12, 2) // quantity * unitPrice * tier multiplier
+  workerReward    Decimal         @db.Decimal(10, 4) // per-task reward for worker
+  platformFeePercent Int          @default(30)        // platform fee % locked at order time
+  
+  // Payment
+  paymentMethod   PaymentMethod   @default(STRIPE)   // WALLET or STRIPE
+  stripePaymentId String?                            // Stripe payment intent ID
+  
+  // Review-specific fields
+  reviewContent   String?                            // for review orders: content guidance/ideas
+  reviewSentiment ReviewSentiment?                   // for review orders
+  reviewRating    Int?                               // 1-5 stars for review orders
+  reviewLanguage  String?                            // language the review must be written in
+  dailyLimit      Int?                               // review orders: max tasks released per day
+  businessName    String?                            // review orders: name of the business
+  businessCountry String?   @db.Char(2)              // review orders: ISO country code
+  requiredGender  Gender?                            // review orders: reviewer gender preference
+  
+  // Additional
+  instructions      String?                          // special instructions from client
+  referenceImageUrl String?                          // optional image uploaded by client to guide workers
+  
+  // Timestamps
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  client          User?           @relation(fields: [clientId], references: [id])
+  serviceType     ServiceType     @relation(fields: [serviceTypeId], references: [id])
+  pricingTier     PricingTier?    @relation(fields: [pricingTierId], references: [id])
+  tasks           Task[]
+  escrow          Escrow?
+  emailUsages     WorkerEmailUsage[]
+  viewHistory     WorkerViewHistory[]
+
+  @@index([clientId])
+  @@index([guestEmail])
+  @@index([trackingToken])
+  @@index([status])
+  @@index([serviceTypeId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// ─────────────────────────────────────────────
+// TASKS (micro-tasks distributed to workers)
+// ─────────────────────────────────────────────
+
+model Task {
+  id              String      @id @default(cuid())
+  orderId         String
+  workerId        String?
+  status          TaskStatus  @default(AVAILABLE)
+  instructions    String                              // what the worker needs to do
+  targetUrl       String
+  targetUsername  String?
+  rewardAmount    Decimal     @db.Decimal(10, 4)      // amount worker earns
+  assignedAt      DateTime?
+  submittedAt     DateTime?
+  verifiedAt      DateTime?
+  expiresAt       DateTime?                           // deadline after assignment
+  scheduledFor    DateTime?                           // review tasks: when this slot unlocks
+  workerEmail     String?                             // review tasks: email worker will use
+  deviceFingerprint String?                           // device hardware ID / fingerprint
+  ipAddress       String?                             // worker IP when submitted
+  userAgent       String?                             // worker device when submitted
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  worker          User?       @relation(fields: [workerId], references: [id])
+  proof           TaskProof?
+  emailUsage      WorkerEmailUsage?
+  viewHistory     WorkerViewHistory?
+  mediaSession    MediaSession?
+
+  @@index([orderId])
+  @@index([workerId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+  @@index([status, workerId])                         // releaseExpired cron: WHERE status=ASSIGNED AND workerId IS NOT NULL
+  @@index([status, expiresAt])                        // releaseExpired + releaseHeldPayments crons
+  @@index([status, scheduledFor])                     // getFeed: WHERE status=AVAILABLE AND scheduledFor<=now
+  @@index([workerId, status])                         // worker dashboard + stats
+  @@index([status, assignedAt])                       // bot detection timer
+  @@map("tasks")
+}
+
+// Tracks which email accounts workers have used for review tasks
+// Prevents the same email reviewing the same business twice
+// CRITICAL: Also tracks device fingerprint to prevent multiple reviews from same device
+model WorkerEmailUsage {
+  id               String   @id @default(cuid())
+  workerId         String
+  email            String   // Gmail / account email used for the review
+  targetUrl        String   // the review target URL (Google Maps link, etc.)
+  orderId          String
+  taskId           String   @unique
+  deviceFingerprint String? // Hardware ID / device fingerprint
+  ipAddress        String?  // IP address when review was submitted
+  usedAt           DateTime @default(now())
+
+  worker     User     @relation(fields: [workerId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+  task       Task     @relation(fields: [taskId], references: [id])
+
+  @@unique([email, targetUrl])           // same email cannot review same URL twice
+  @@unique([deviceFingerprint, targetUrl]) // CRITICAL: same device cannot review same business twice
+  @@unique([workerId, orderId])          // same worker cannot do 2 review tasks for same order
+  @@index([workerId])
+  @@index([targetUrl])
+  @@index([deviceFingerprint])
+  @@map("worker_email_usages")
+}
+
+// Tracks which URLs workers have viewed for traffic/view tasks
+// CRITICAL ANTI-FRAUD: 1 Worker = 1 IP = 1 View per URL
+// Prevents YouTube/Google Analytics from flagging views as spam
+model WorkerViewHistory {
+  id         String   @id @default(cuid())
+  workerId   String
+  targetUrl  String   // The exact URL viewed (YouTube video, website, etc.)
+  orderId    String   // Which order this view was for
+  taskId     String   @unique
+  ipAddress  String   // IP address when view was completed
+  userAgent  String?  // Browser/device info
+  viewedAt   DateTime @default(now())
+  duration   Int?     // How long they stayed (seconds)
+
+  worker     User     @relation(fields: [workerId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+  task       Task     @relation(fields: [taskId], references: [id])
+
+  @@unique([workerId, targetUrl])   // GOLDEN RULE: same worker cannot view same URL twice, EVER
+  @@index([workerId])
+  @@index([targetUrl])
+  @@index([orderId])
+  @@index([ipAddress])
+  @@index([ipAddress, targetUrl])   // click farm detection: same IP viewing same URL
+  @@index([viewedAt])               // data purge / time-range queries
+  @@map("worker_view_history")
+}
+
+model TaskProof {
+  id              String      @id @default(cuid())
+  taskId          String      @unique
+  screenshotUrl   String?                             // uploaded screenshot
+  screenshotHash  String?                             // SHA-256 of screenshot (duplicate detection)
+  proofUrl        String?                             // link to completed action
+  proofText       String?                             // e.g., username that followed
+  status          ProofStatus @default(PENDING)
+  rejectionReason String?
+  reviewedBy      String?                             // admin ID if manual review
+  reviewedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  task            Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([screenshotHash])                           // fast duplicate lookup
+  @@index([screenshotHash, status])                   // duplicate detection + status filter
+  @@map("task_proofs")
+}
+
+// ─────────────────────────────────────────────
+// MEDIA SESSIONS (heartbeat anti-cheat)
+// ─────────────────────────────────────────────
+
+model MediaSession {
+  id              String   @id @default(cuid())
+  taskId          String   @unique
+  workerId        String
+  token           String   @unique                  // HMAC ephemeral token
+  startedAt       DateTime @default(now())
+  lastHeartbeatAt DateTime @default(now())
+  activeSeconds   Int      @default(0)              // DB source of truth — never trust client
+  status          String   @default("ACTIVE")       // ACTIVE | PAUSED | COMPLETED | EXPIRED
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([workerId])
+  @@index([token])
+  @@index([status, lastHeartbeatAt])               // stale session cleanup cron
+  @@map("media_sessions")
+}
+
+// ─────────────────────────────────────────────
+// WALLET & PAYMENTS
+// ─────────────────────────────────────────────
+
+model Wallet {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  balance         Decimal       @default(0) @db.Decimal(12, 2)
+  pendingBalance  Decimal       @default(0) @db.Decimal(12, 2) // awaiting verification
+  totalEarned     Decimal       @default(0) @db.Decimal(12, 2)
+  totalSpent      Decimal       @default(0) @db.Decimal(12, 2)
+  totalWithdrawn  Decimal       @default(0) @db.Decimal(12, 2)
+  currency        String        @default("USD") @db.Char(3)
+  stripeCustomerId  String?     // for clients (charges)
+  stripeAccountId   String?     // for workers (payouts via Connect)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions        Transaction[]
+  escrowsFrom         Escrow[]            @relation("EscrowFromWallet")
+  withdrawalRequests  WithdrawalRequest[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  walletId        String
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  amount          Decimal           @db.Decimal(12, 2)
+  fee             Decimal           @default(0) @db.Decimal(8, 2)
+  description     String?
+  referenceId     String?           // links to order/task/escrow/stripe
+  referenceType   String?           // "order", "task", "escrow", "stripe"
+  stripePaymentId String?
+  balanceBefore   Decimal?          @db.Decimal(12, 2)
+  balanceAfter    Decimal?          @db.Decimal(12, 2)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  wallet          Wallet            @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([status])
+  @@index([referenceId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model Escrow {
+  id              String       @id @default(cuid())
+  orderId         String       @unique
+  fromWalletId    String
+  totalAmount     Decimal      @db.Decimal(12, 2) // total locked
+  releasedAmount  Decimal      @default(0) @db.Decimal(12, 2) // released so far
+  refundedAmount  Decimal      @default(0) @db.Decimal(12, 2) // refunded so far
+  status          EscrowStatus @default(HELD)
+  lockedAt        DateTime     @default(now())
+  releasedAt      DateTime?
+  refundedAt      DateTime?
+
+  order           Order        @relation(fields: [orderId], references: [id])
+  fromWallet      Wallet       @relation("EscrowFromWallet", fields: [fromWalletId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@map("escrows")
+}
+
+model WithdrawalRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  walletId        String
+  amount          Decimal  @db.Decimal(12, 2)
+  currency        String   @default("USD") @db.Char(3)
+  method          String   // PAYPAL, MOBILE_MONEY
+  accountDetails  String   // PayPal email or phone number
+
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAID, DISPUTED, RESOLVED
+
+  // Admin review
+  adminNotes      String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+
+  // Payment proof from admin
+  paymentProofUrl String?
+  paidAt          DateTime?
+
+  // Worker confirmation
+  workerConfirmed   Boolean @default(false)
+  workerConfirmedAt DateTime?
+  disputeReason     String?
+  disputedAt        DateTime?
+
+  // Link to transaction record
+  transactionId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId])
+  @@index([walletId])
+  @@index([status])
+  @@map("withdrawal_requests")
+}
+
+// ─────────────────────────────────────────────
+// TRUST & ANALYTICS
+// ─────────────────────────────────────────────
+
+model TrustScore {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  score           Float    @default(50) // 0-100
+  totalTasks      Int      @default(0)
+  verifiedTasks   Int      @default(0)
+  rejectedTasks   Int      @default(0)
+  flaggedTasks    Int      @default(0)
+  avgCompletionTime Float  @default(0) // seconds
+  fraudFlags      Int      @default(0)
+  lastCalculated  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trust_scores")
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String?
+  action          String   // "order.created", "task.verified", "escrow.released"
+  entity          String   // "order", "task", "wallet"
+  entityId        String?
+  oldValue        Json?
+  newValue        Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

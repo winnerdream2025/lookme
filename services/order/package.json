@@ -1,0 +1,32 @@
+{
+  "name": "@lookme/order-service",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@lookme/config": "workspace:*",
+    "@lookme/database": "workspace:*",
+    "@lookme/email": "workspace:*",
+    "@lookme/logger": "workspace:*",
+    "@lookme/server": "workspace:*",
+    "@lookme/utils": "workspace:*",
+    "@lookme/validation": "workspace:*",
+    "express": "^4.19.0",
+    "multer": "^2.1.1",
+    "stripe": "^22.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

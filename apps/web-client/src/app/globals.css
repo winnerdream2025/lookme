@@ -1,0 +1,576 @@
+@import "tailwindcss";
+
+/* ============================================
+   LOOKME PLATFORM - GLOBAL DESIGN SYSTEM
+   Premium Glassmorphism Architecture
+   ============================================ */
+
+@theme {
+  /* ========== BRAND COLORS ========== */
+  
+  /* Primary - Electric Royal Blue */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  
+  /* Cyan Accent - For Gradients */
+  --color-cyan-50: #ecfeff;
+  --color-cyan-100: #cffafe;
+  --color-cyan-200: #a5f3fc;
+  --color-cyan-300: #67e8f9;
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+  --color-cyan-600: #0891b2;
+  --color-cyan-700: #0e7490;
+  --color-cyan-800: #155e75;
+  --color-cyan-900: #164e63;
+  
+  /* ========== SURFACE COLORS ========== */
+  
+  /* Deep Slate/Navy Backgrounds */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  
+  /* ========== NEUTRALS ========== */
+  
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+  
+  /* ========== SEMANTIC COLORS ========== */
+  
+  /* Success - Emerald */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
+  
+  /* Warning - Amber */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  
+  /* Danger - Red */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+  
+  /* Info - Blue */
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+  
+  /* ========== TYPOGRAPHY ========== */
+  
+  /* Font Families - Plus Jakarta Sans (primary) */
+  --font-sans: var(--font-jakarta), 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  
+  /* Font Sizes - Strict Typography Scale */
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  --font-size-4xl: 2.25rem;     /* 36px */
+  --font-size-5xl: 3rem;        /* 48px */
+  --font-size-6xl: 3.75rem;     /* 60px */
+  --font-size-7xl: 4.5rem;      /* 72px */
+  
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+  
+  /* Letter Spacing */
+  --tracking-tighter: -0.05em;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+  
+  /* ========== SPACING SCALE ========== */
+  
+  --spacing-px: 1px;
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  --spacing-16: 4rem;     /* 64px */
+  --spacing-20: 5rem;     /* 80px */
+  --spacing-24: 6rem;     /* 96px */
+  
+  /* ========== BORDER RADIUS ========== */
+  
+  --radius-none: 0;
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.375rem;  /* 6px */
+  --radius-lg: 0.5rem;    /* 8px */
+  --radius-xl: 0.75rem;   /* 12px */
+  --radius-2xl: 1rem;     /* 16px */
+  --radius-3xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+  
+  /* ========== SHADOWS ========== */
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-glow: 0 0 20px rgb(37 99 235 / 0.3);
+}
+
+/* ============================================
+   GLASSMORPHISM UTILITIES
+   ============================================ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.glass-input {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-500);
+  outline: none;
+}
+
+.glass-button {
+  background: rgba(37, 99, 235, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+}
+
+.glass-button:hover {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+/* ============================================
+   GRADIENT UTILITIES
+   ============================================ */
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-cyan-500) 100%);
+}
+
+.gradient-primary-hover {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-cyan-400) 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, var(--color-slate-900) 0%, var(--color-slate-800) 100%);
+}
+
+.gradient-mesh {
+  background: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-cyan-400) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================
+   TYPOGRAPHY SYSTEM
+   ============================================ */
+
+/* Heading Styles - Mobile-first responsive scale */
+h1, .heading-1 {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+h2, .heading-2 {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+h3, .heading-3 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-snug);
+}
+
+h4, .heading-4 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-snug);
+}
+
+h5, .heading-5 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-snug);
+}
+
+h6, .heading-6 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-normal);
+}
+
+/* Desktop heading up-scale (≥768px) */
+@media (min-width: 768px) {
+  h1, .heading-1 { font-size: var(--font-size-5xl); }
+  h2, .heading-2 { font-size: var(--font-size-4xl); }
+  h3, .heading-3 { font-size: var(--font-size-3xl); }
+  h4, .heading-4 { font-size: var(--font-size-2xl); }
+  h5, .heading-5 { font-size: var(--font-size-xl); }
+  h6, .heading-6 { font-size: var(--font-size-lg); }
+}
+
+/* Dark Theme Headings */
+.dark h1, .dark .heading-1,
+.dark h2, .dark .heading-2,
+.dark h3, .dark .heading-3,
+.dark h4, .dark .heading-4,
+.dark h5, .dark .heading-5,
+.dark h6, .dark .heading-6 {
+  color: var(--color-slate-50);
+}
+
+/* Body Text Styles */
+.body-text {
+  font-size: var(--font-size-base);
+  line-height: var(--leading-relaxed);
+  color: var(--color-slate-700);
+}
+
+.body-text-sm {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-slate-600);
+}
+
+.body-text-lg {
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--color-slate-700);
+}
+
+/* Dark Theme Body Text */
+.dark .body-text {
+  color: var(--color-slate-300);
+}
+
+.dark .body-text-sm {
+  color: var(--color-slate-400);
+}
+
+.dark .body-text-lg {
+  color: var(--color-slate-300);
+}
+
+/* Label Styles */
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-slate-600);
+}
+
+.dark .label {
+  color: var(--color-slate-400);
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(37, 99, 235, 0.6); }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+/* ============================================
+   GLOBAL BASE STYLES
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+  color: var(--color-slate-100);
+  background: var(--color-slate-950);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Light Mode Override — add class="light" to <body> when needed */
+body.light {
+  color: var(--color-slate-900);
+  background: var(--color-slate-50);
+}
+
+/* Selection Styles */
+::selection {
+  background-color: var(--color-primary-500);
+  color: white;
+}
+
+::-moz-selection {
+  background-color: var(--color-primary-500);
+  color: white;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-slate-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-400);
+  border-radius: var(--radius-lg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-500);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--color-slate-900);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-slate-700);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-600);
+}
+
+/* ============================================
+   FORM FIELD UTILITIES
+   Enforce 16px (text-base) on mobile to prevent
+   iOS auto-zoom, dark semi-transparent surfaces,
+   and ring-2 ring-blue-500 focus rings.
+   ============================================ */
+
+.form-field {
+  display: block;
+  width: 100%;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+  padding: 0.75rem 1rem;
+  color: var(--color-slate-100);
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  transition: all 0.2s ease;
+}
+
+.form-field::placeholder {
+  color: var(--color-slate-500);
+}
+
+.form-field:focus {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-500);
+  outline: none;
+}
+
+.form-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-field-error {
+  border-color: var(--color-danger-500);
+}
+
+.form-field-error:focus {
+  border-color: var(--color-danger-500);
+  box-shadow: 0 0 0 2px var(--color-danger-500);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-slate-300);
+  margin-bottom: 0.5rem;
+}
+
+.form-helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-slate-500);
+  margin-top: 0.375rem;
+}
+
+.form-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger-400);
+  font-weight: 500;
+  margin-top: 0.375rem;
+}
+
+/* Focus Visible Styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Disabled States */
+:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

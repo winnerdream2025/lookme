@@ -1,0 +1,217 @@
+# ──────────────────────────────────────────────────────────────────
+# LookMe — Production Docker Compose
+#
+# Usage:
+#   cp .env.example .env          # fill in all values
+#   docker compose -f docker-compose.production.yml up -d --build
+#
+# Database/Redis are NOT included here — provide managed services
+# via DATABASE_URL and REDIS_URL in your .env file.
+# Run migrations once before first boot:
+#   docker compose -f docker-compose.production.yml run --rm auth-service \
+#     sh -c "node_modules/.bin/prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+# ──────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+networks:
+  lookme:
+    driver: bridge
+
+# ── Shared env blocks (anchors) ────────────────────────────────────
+x-db-env: &db-env
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: ${REDIS_URL}
+
+x-jwt-env: &jwt-env
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+  JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+  JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+
+x-email-env: &email-env
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  FROM_EMAIL: ${FROM_EMAIL:-noreply@lookme.io}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@lookme.io}
+  FRONTEND_URL: ${FRONTEND_URL}
+
+x-platform-env: &platform-env
+  NODE_ENV: production
+  PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-15}
+  MIN_DEPOSIT: ${MIN_DEPOSIT:-5}
+  MIN_WITHDRAWAL: ${MIN_WITHDRAWAL:-10}
+
+services:
+
+  # ── Auth Service ─────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    # NOT exposed to host — reachable only from api-gateway via Docker network
+    environment:
+      <<: [*db-env, *jwt-env, *email-env, *platform-env]
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-5001}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Catalog Service ───────────────────────────────────────────────
+  catalog-service:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    environment:
+      <<: [*db-env, *platform-env]
+      CATALOG_SERVICE_PORT: ${CATALOG_SERVICE_PORT:-5002}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Order Service ─────────────────────────────────────────────────
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    environment:
+      <<: [*db-env, *jwt-env, *email-env, *platform-env]
+      ORDER_SERVICE_PORT: ${ORDER_SERVICE_PORT:-5003}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Task Service ──────────────────────────────────────────────────
+  task-service:
+    build:
+      context: .
+      dockerfile: services/task/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    environment:
+      <<: [*db-env, *jwt-env, *platform-env]
+      TASK_SERVICE_PORT: ${TASK_SERVICE_PORT:-5004}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_PREFIX: ${S3_PREFIX:-proofs/}
+      CLOUDFRONT_URL: ${CLOUDFRONT_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5004/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Wallet Service ────────────────────────────────────────────────
+  wallet-service:
+    build:
+      context: .
+      dockerfile: services/wallet/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    environment:
+      <<: [*db-env, *jwt-env, *platform-env]
+      WALLET_SERVICE_PORT: ${WALLET_SERVICE_PORT:-5005}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5005/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── API Gateway ───────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    networks: [lookme]
+    ports:
+      - "${API_GATEWAY_PORT:-4000}:4000"        # exposed — reverse-proxy this in nginx/Cloudflare
+    environment:
+      <<: [*db-env, *jwt-env, *platform-env]
+      API_GATEWAY_PORT: 4000
+      # Service hostnames — must match docker-compose service names above
+      AUTH_SERVICE_HOST: auth-service
+      CATALOG_SERVICE_HOST: catalog-service
+      ORDER_SERVICE_HOST: order-service
+      TASK_SERVICE_HOST: task-service
+      WALLET_SERVICE_HOST: wallet-service
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-5001}
+      CATALOG_SERVICE_PORT: ${CATALOG_SERVICE_PORT:-5002}
+      ORDER_SERVICE_PORT: ${ORDER_SERVICE_PORT:-5003}
+      TASK_SERVICE_PORT: ${TASK_SERVICE_PORT:-5004}
+      WALLET_SERVICE_PORT: ${WALLET_SERVICE_PORT:-5005}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@lookme.io}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@lookme.io}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy
+      wallet-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Web Client (Next.js) ──────────────────────────────────────────
+  web-client:
+    build:
+      context: .
+      dockerfile: apps/web-client/Dockerfile
+      args:
+        # NEXT_PUBLIC vars are baked into the bundle at build time
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${NEXT_PUBLIC_STRIPE_PUBLIC_KEY}
+    restart: unless-stopped
+    networks: [lookme]
+    ports:
+      - "3001:3001"                              # exposed — reverse-proxy this in nginx/Cloudflare
+    environment:
+      NODE_ENV: production
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

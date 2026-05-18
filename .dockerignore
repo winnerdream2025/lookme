@@ -1,0 +1,38 @@
+# Secrets — NEVER in image
+.env
+.env.*
+!.env.example
+
+# Dev artifacts
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/.DS_Store
+**/*.log
+**/*.tsbuildinfo
+
+# Git
+.git
+.gitignore
+
+# Docs (not needed at runtime)
+*.md
+!README.md
+docs/
+logs/
+
+# Test / CI
+*.test.ts
+*.spec.ts
+test-*.sh
+test.sh
+check-status.sh
+
+# Dev-only scripts
+start-project.sh
+stop-project.sh
+configure-traffic-services.sql
+set-platform-fees.sql

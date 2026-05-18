@@ -1,0 +1,23 @@
+{
+  "name": "lookme",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @lookme/database generate",
+    "db:push": "pnpm --filter @lookme/database push",
+    "db:migrate": "pnpm --filter @lookme/database migrate",
+    "db:seed": "pnpm --filter @lookme/database seed",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "pnpm@9.7.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
