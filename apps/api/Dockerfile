@@ -21,4 +21,4 @@ EXPOSE 4000
 # Run as non-root
 USER node
 
-CMD ["node_modules/.bin/tsx", "apps/api/src/index.ts"]
+CMD ["node", "node_modules/.bin/tsx", "apps/api/src/index.ts"]

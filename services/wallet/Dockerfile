@@ -16,4 +16,4 @@ EXPOSE 5005
 
 USER node
 
-CMD ["node_modules/.bin/tsx", "services/wallet/src/index.ts"]
+CMD ["node", "node_modules/.bin/tsx", "services/wallet/src/index.ts"]

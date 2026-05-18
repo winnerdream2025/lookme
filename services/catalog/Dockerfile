@@ -16,4 +16,4 @@ EXPOSE 5002
 
 USER node
 
-CMD ["node_modules/.bin/tsx", "services/catalog/src/index.ts"]
+CMD ["node", "node_modules/.bin/tsx", "services/catalog/src/index.ts"]
