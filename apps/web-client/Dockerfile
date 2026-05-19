@@ -1,8 +1,9 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@9.7.0 --activate
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -28,4 +29,4 @@ EXPOSE 3001
 USER node
 
 WORKDIR /app/apps/web-client
-CMD ["../../node_modules/.bin/next", "start", "--port", "3001"]
+CMD ["node_modules/.bin/next", "start", "--port", "3001"]
