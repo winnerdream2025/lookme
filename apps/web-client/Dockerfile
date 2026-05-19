@@ -24,9 +24,7 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN pnpm --filter web-client run build
 
 ENV NODE_ENV=production
-EXPOSE 3001
-
-USER node
+EXPOSE 3000
 
 WORKDIR /app/apps/web-client
-CMD ["node_modules/.bin/next", "start", "--port", "3001"]
+CMD ["sh", "-c", "node_modules/.bin/next start --port ${PORT:-3000}"]
